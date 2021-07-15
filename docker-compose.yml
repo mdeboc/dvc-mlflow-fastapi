@@ -1,0 +1,36 @@
+version: "3.8"
+services:
+  mlflow:
+    build:
+      context: mlflow/.
+    ports:
+      - ${MLFLOW_PORT}:${MLFLOW_PORT}
+    working_dir: /work
+    command: poetry run mlflow server --backend-store-uri sqlite:///mlflow.db --default-artifact-root artifacts/ --host 0.0.0.0 --port ${MLFLOW_PORT}
+    volumes:
+      - "./mlflow/src/.:/work/src"
+      - "./data/.:/data"
+      - "./.dvc/.:/work/.dvc"
+      - "./dvc.lock:/work/dvc.lock"
+      - "./dvc.yaml:/work/dvc.yaml"
+      - "./params.yaml:/work/params.yaml"
+      - "./mlflow/pyproject.toml:/work/pyproject.toml"
+      - "./mlflow/poetry.lock:/work/poetry.lock"
+      - "mlflow-volume:/work/.cache/"
+  fastapi:
+    build:
+      context: fastapi/.
+    ports:
+      - ${FASTAPI_PORT}:${FASTAPI_PORT}
+    working_dir: /work
+    command: poetry run uvicorn prediction_service.app:app --host 0.0.0.0 --port ${FASTAPI_PORT}
+    volumes:
+      - "./fastapi/src/.:/work/src"
+      - "./fastapi/pyproject.toml:/work/pyproject.toml"
+      - "./fastapi/poetry.lock:/work/poetry.lock"
+      - "fastapi-volume:/work/.cache/"
+volumes:
+    mlflow-volume:
+      name: mlflow-volume
+    fastapi-volume:
+      name: fastapi-volume
